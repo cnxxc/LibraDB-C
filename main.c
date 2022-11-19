@@ -5,13 +5,18 @@
 int main()
 {
 	Dal* dal=newDal("db.db");
-	Page* page=allocateEmptyPage();
-	const char* p="data";
-	memcpy(page->data,p,4);
-	page->data[4]='\0';
-	writePage(dal,page);
-	//FILE* f=fopen("txt","a+");
-	//char s[]="1234";
-	//fwrite(s,sizeof(char),4,f);
-	return 0;
+	Page* p=allocateEmptyPage();
+	p->num=getNextPage(dal->freelist);
+	memcpy(p->data,"data\0",5);
+	writePage(dal,p);
+	writeFreelist(dal);
+	closeFile(dal);
+	dal=newDal("db.db");
+	p=allocateEmptyPage();
+	p->num=getNextPage(dal->freelist);
+	memcpy(p->data,"data2\0",6);
+	writePage(dal,p);
+	PageNum pn=getNextPage(dal->freelist);
+	releasePage(dal->freelist,pn);
+	writeFreelist(dal);
 }

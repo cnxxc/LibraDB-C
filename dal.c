@@ -1,4 +1,4 @@
-/***************数据访问层***********/
+/***************dal.c***********/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,15 +9,35 @@
 Dal* newDal(const char* path)
 {
 	Dal *dal=(Dal*)malloc(sizeof(Dal));
-	FILE* f=fopen(path,"w+");
-	if(f==NULL)
+	dal->meta=newEmptyMeta();
+	if(0==access(path,F_OK))
 	{
-		fprintf(stderr,"File: %s open failed!\n",path);
-		exit(1);
+		FILE* f=fopen(path,"r+");
+		if(f==NULL)
+		{
+			fprintf(stderr,"File: %s open failed!\n",path);
+			exit(1);
+		}
+		dal->file=f;
+		Meta* m=readMeta(dal);
+		dal->meta=m;
+		Freelist* fl=readFreelist(dal);
+		dal->freelist=fl;
 	}
-	dal->file=f;
-	//dal->pageSize=pagesize;
-	dal->freelist=newFreelist();
+	else{
+		FILE* f=fopen(path,"w");
+		if(f==NULL)
+		{
+			fprintf(stderr,"File: %s open failed!\n",path);
+			exit(1);
+		}
+		dal->file=f;
+		//dal->pageSize=pagesize;
+		dal->freelist=newFreelist();
+		dal->meta->freelistPage=getNextPage(dal->freelist);
+		writeFreelist(dal);
+		writeMeta(dal);
+	}
 	return dal;
 }
 
@@ -34,13 +54,14 @@ void closeFile(Dal* dal)
 		fprintf(stderr,"File close failed!\n");
 		exit(1);
 	}
+	free(dal);
 	return;
 }
 
 Page* allocateEmptyPage()
 {
 	Page* page=(Page*)malloc(sizeof(Page));
-	page->num=0;
+	//page->num=0;
 	return page;
 }
 
@@ -59,6 +80,7 @@ Page* readPage(Dal* dal,PageNum pgnum)
 	return page;
 }
 
+//将page的内容写入dal文件
 void writePage(Dal* dal,Page* page)
 {
 	int offset=page->num*PAGESIZE;
@@ -70,4 +92,39 @@ void writePage(Dal* dal,Page* page)
 	}
 	fwrite(page->data,sizeof(char),PAGESIZE,dal->file);
 	return;
+}
+
+Page* writeFreelist(Dal* dal)
+{
+	Page* p=allocateEmptyPage();
+	p->num=dal->meta->freelistPage;
+	serializeFreelist(dal->freelist,p->data);
+	writePage(dal,p);
+	dal->meta->freelistPage=p->num;
+	return p;
+}
+
+Page* writeMeta(Dal* dal)
+{
+	Page* p=allocateEmptyPage();
+	p->num=METAPAGENUM;
+	serializeMeta(dal->meta,p->data);
+	writePage(dal,p);
+	return p;
+}
+
+Meta* readMeta(Dal* dal)
+{
+	Page* p=readPage(dal,METAPAGENUM);
+	Meta* meta=newEmptyMeta();
+	deserializeMeta(meta,p->data);
+	return meta;
+}
+
+Freelist* readFreelist(Dal* dal)
+{
+	Page* page=readPage(dal,dal->meta->freelistPage);
+	Freelist* freelist=newFreelist();
+	deserializeFreelist(freelist,page->data);
+	return freelist;
 }
