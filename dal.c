@@ -9,6 +9,7 @@
 Dal* newDal(const char* path)
 {
 	Dal *dal=(Dal*)malloc(sizeof(Dal));
+	dal->pageSize=getpagesize();
 	dal->meta=newEmptyMeta();
 	if(0==access(path,F_OK))
 	{
@@ -58,45 +59,45 @@ void closeFile(Dal* dal)
 	return;
 }
 
-Page* allocateEmptyPage()
+Page* allocateEmptyPage(Dal* dal)
 {
 	Page* page=(Page*)malloc(sizeof(Page));
-	//page->num=0;
+	page->data=(char*)calloc(dal->pageSize,sizeof(char));
 	return page;
 }
 
 //从dal文件写入page
 Page* readPage(Dal* dal,PageNum pgnum)
 {
-	Page *page=allocateEmptyPage();
-	int offset=pgnum*PAGESIZE;
+	Page *page=allocateEmptyPage(dal);
+	int offset=pgnum*dal->pageSize;
 	int ret=fseek(dal->file,offset,SEEK_SET);
 	if(ret!=0)
 	{
 		fprintf(stderr,"fseek file failed!\n");
 		exit(1);
 	}
-	fread(page->data,sizeof(char),PAGESIZE,dal->file);
+	fread(page->data,sizeof(char),dal->pageSize,dal->file);
 	return page;
 }
 
 //将page的内容写入dal文件
 void writePage(Dal* dal,Page* page)
 {
-	int offset=page->num*PAGESIZE;
+	int offset=page->num*dal->pageSize;
 	int ret=fseek(dal->file,offset,SEEK_SET);
 	if(ret!=0)
 	{
 		fprintf(stderr,"fseek file failed!\n");
 		exit(1);
 	}
-	fwrite(page->data,sizeof(char),PAGESIZE,dal->file);
+	fwrite(page->data,sizeof(char),dal->pageSize,dal->file);
 	return;
 }
 
 Page* writeFreelist(Dal* dal)
 {
-	Page* p=allocateEmptyPage();
+	Page* p=allocateEmptyPage(dal);
 	p->num=dal->meta->freelistPage;
 	serializeFreelist(dal->freelist,p->data);
 	writePage(dal,p);
@@ -106,7 +107,7 @@ Page* writeFreelist(Dal* dal)
 
 Page* writeMeta(Dal* dal)
 {
-	Page* p=allocateEmptyPage();
+	Page* p=allocateEmptyPage(dal);
 	p->num=METAPAGENUM;
 	serializeMeta(dal->meta,p->data);
 	writePage(dal,p);

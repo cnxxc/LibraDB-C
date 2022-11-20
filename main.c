@@ -5,14 +5,14 @@
 int main()
 {
 	Dal* dal=newDal("db.db");
-	Page* p=allocateEmptyPage();
+	Page* p=allocateEmptyPage(dal);
 	p->num=getNextPage(dal->freelist);
 	memcpy(p->data,"data\0",5);
 	writePage(dal,p);
 	writeFreelist(dal);
 	closeFile(dal);
 	dal=newDal("db.db");
-	p=allocateEmptyPage();
+	p=allocateEmptyPage(dal);
 	p->num=getNextPage(dal->freelist);
 	memcpy(p->data,"data2\0",6);
 	writePage(dal,p);

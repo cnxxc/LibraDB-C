@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define PAGESIZE 4096	//页大小
+//#define PAGESIZE 4096	//页大小
 #define METAPAGENUM 0	//Meta页号
 #define	PAGENUMSIZE 8	//页号用几位存储
 
@@ -10,7 +10,7 @@ typedef uint64_t PageNum;
  
 typedef struct{
     PageNum maxPage;
-    PageNum releasedPages[100];
+    PageNum releasedPages[256];
     PageNum releasedSize;   //releasedPages的有效大小
 }Freelist;
 
@@ -20,20 +20,20 @@ typedef struct{
 
 typedef struct{
 	FILE* file;
-	//int pageSize;页大小4096KB
+	int pageSize;
 	Meta* meta;
     Freelist* freelist;
 }Dal;
 
 typedef struct{
 	PageNum num;
-    char data[PAGESIZE];
+    char* data;
 }Page;
 
 /////////Dal//////////////
 Dal* newDal(const char* path);
 void closeFile(Dal* dal);
-Page* allocateEmptyPage();
+Page* allocateEmptyPage(Dal* dal);
 Page* readPage(Dal* dal,PageNum pgnum);
 void writePage(Dal* dal,Page* page);
 Page* writeFreelist(Dal* dal);
