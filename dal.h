@@ -3,7 +3,14 @@
 
 #include "meta.h"
 #include "freelist.h"
-#include "page.h"
+#include "node.h"
+
+class Page
+{
+public:
+	PageNum num;
+	char* data;	
+};
 
 class Dal
 {
@@ -16,6 +23,7 @@ public:
 	Page* writeFreelist();
 	void writePage(Page* page);
 	Page* writeMeta();
+	Node* getNode(PageNum pagenum);
 	~Dal();	
 public:
 	FILE* file;

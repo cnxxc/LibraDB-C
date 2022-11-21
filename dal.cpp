@@ -109,6 +109,12 @@ Page* Dal::writeMeta()
 	return p;
 }
 
+Node* Dal::getNode(PageNum pagenum)
+{
+	Page* page=readPage(pagenum);
+	Node* node=new Node();
+}
+
 Dal::~Dal()
 {
 	if(file==NULL)
