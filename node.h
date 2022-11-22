@@ -23,6 +23,7 @@ public:
 	bool isLeaf();
 	char* serialize(char* buf);
 	void deserialize(char* buf);
+	std:pair<bool,int> findKeyInNode(std::string& key);
 	~Node();
 
 public:

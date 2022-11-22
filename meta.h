@@ -12,6 +12,7 @@ public:
 	~Meta();
 public:
 	PageNum freelistPage;
+	PageNum root;//B树根结点	
 };
 
 #endif

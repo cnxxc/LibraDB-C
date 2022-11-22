@@ -1,5 +1,6 @@
 #include "node.h"
 #include <string.h>
+#include <string>
 
 Item::Item(std::string& k,std::string& v):key(k),value(v){}
 
@@ -13,11 +14,11 @@ bool Node::isLeaf()
 }
 
 /*
-+-----------+-----------+---------------+-----------+-------------------+
-|	ifLeaf	|	ItemNum	|	childNodes	|  nothing	|		Items		|	
-+-----------+-----------+---------------+-----------+-------------------+
-|	1Byte	|	2Bytes	|  (k+1)*8Bytes	|			|	k*(klen+vlen+2)	|
-+-----------+-----------+---------------+-----------+-------------------+
++-----------+-----------+---------------------------+-----------+-------------------+
+|	ifLeaf	|	ItemNum	|	childNodes+offset		|  	...		|		Items		|	
++-----------+-----------+---------------------------+-----------+-------------------+
+|	1Byte	|	2Bytes	|  (k+1)*(8Bytes+2Bytes)	|			|	k*(klen+vlen+2)	|
++-----------+-----------+---------------------------+-----------+-------------------+
 */
 char* Node::serialize(char* buf)
 {
@@ -74,7 +75,67 @@ char* Node::serialize(char* buf)
 
 void Node::deserialize(char* buf)
 {
-	
+	char* leftPos=buf;
+	isLeaf=(uint16_t)buf[0];
+	uint16_t c;
+	memcpy(&c,buf+1,2);
+	itemsCount=(uint16_t)c;
+	leftPos+=3;
+
+	for(size_t i=0;i<itemsCount;++i)
+	{
+		if(!isLeaf)
+		{
+			PageNum pn;
+			memcpy(&pn,leftPos,PageNumSize);
+			leftPos+=PageNumSize;
+			childNodes.push_back(pn);
+		}
+
+		uint16_t offset;
+		memcpy(&offset,leftPos,2);
+		leftPos+=2;
+
+		uint16_t kLen;
+		memcpy(&kLen,buf+offset,2);
+		++offset;
+
+		std::string key(buf+offset,kLen);
+		offset+=kLen;
+
+		uint16_t vLen;
+		memcpy(&vLen,buf+offset,2);
+		++offset;
+
+		std::string value(buf+offset,vLen);
+		offset+=vLen;
+
+		Item* item=new Item(key,value);
+		items.push_back(item);
+	}
+
+	if(!isLeaf)
+	{
+		PageNum pn;
+		memcpy(&pn,leftPos,PageNumSize);
+		childNodes.push_back(pn);
+	}
+}
+
+std::pair<bool,int> Node::findKeyInNode(std::string& key)
+{
+	for(size_t i=0;i<items.size();++i)
+	{
+		if(items[i]->key==key)
+		{
+			return {true,i};
+		}
+		if(items[i]->key>key)//待查找key比第一个Item还小
+		{
+			return {false,i};
+		}
+	}
+	return {false,items.size()};//待查找的key比最后一个Item还大
 }
 
 Node::~Node(){}
