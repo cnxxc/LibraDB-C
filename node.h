@@ -2,8 +2,11 @@
 #define _NODE_H
 
 #include "defs.h"
+#include "dal.h"
 #include <string>
 #include <vector>
+
+class Dal;
 
 class Item
 {
@@ -23,12 +26,14 @@ public:
 	bool isLeaf();
 	char* serialize(char* buf);
 	void deserialize(char* buf);
-	std:pair<bool,int> findKeyInNode(std::string& key);
+	std::pair<bool,int> findKeyInNode(std::string key);
+	std::pair<int,Node*> findKey(Node* node,std::string key);
+	Node* getNode(PageNum pagenum);
 	~Node();
 
 public:
 	Dal* dal;
-	PageNum pageNum
+	PageNum pageNum;
 	std::vector<Item*> items;
 	std::vector<PageNum> childNodes;
 };

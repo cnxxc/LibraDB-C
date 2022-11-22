@@ -25,19 +25,20 @@ char* Node::serialize(char* buf)
 	char* leftPos=buf;
 	int rightPos=dal->pageSize-1;
 	uint64_t bitSetVar=0;
-	bool isLeaf=isLeaf();
-	if(isLeaf)
+	bool is_Leaf=isLeaf();
+	if(is_Leaf)
 	{
 		bitSetVar=1;
 	}
-	buf[leftPos++]=(char)bitSetVar;
-	memcpy(leftPos,(uint16_t)items.size(),2);
+	*leftPos++=(char)bitSetVar;
+	uint16_t itemSize=items.size();
+	memcpy(leftPos,&itemSize,2);
 	leftPos+=2;
 
 	for(size_t i=0;i<items.size();++i)
 	{
 		Item* item=items[i];
-		if(!isLeaf)
+		if(!is_Leaf)
 		{
 			PageNum childNode=childNodes[i];
 			memcpy(leftPos,&childNode,PageNumSize);//左边存子结点页号
@@ -49,22 +50,24 @@ char* Node::serialize(char* buf)
 
 		uint16_t offset=(uint16_t)(rightPos-kLen-vLen-2);//右边存子结点信息（key长度、key、value长度、value）
 		memcpy(leftPos,&offset,2);
-		leftPos+=2；
+		leftPos+=2;
 
 		rightPos-=vLen;
-		memcpy(buf+rightPos,item->value,vLen);
+		const char* v=item->value.data();
+		memcpy(buf+rightPos,v,vLen);
 
 		--rightPos;
 		buf[rightPos]=(char)vLen;
 
 		rightPos-=kLen;
-		memcpy(buf+rightPos,item->key,kLen);
+		const char* k=item->key.data();
+		memcpy(buf+rightPos,k,kLen);
 
 		--rightPos;
 		buf[rightPos]=(char)kLen;
 	}
 
-	if(!isLeaf)
+	if(!is_Leaf)
 	{
 		PageNum lastChildNode=childNodes.back();
 		memcpy(leftPos,&lastChildNode,PageNumSize);
@@ -76,10 +79,10 @@ char* Node::serialize(char* buf)
 void Node::deserialize(char* buf)
 {
 	char* leftPos=buf;
-	isLeaf=(uint16_t)buf[0];
+	bool isLeaf=(uint16_t)buf[0];
 	uint16_t c;
 	memcpy(&c,buf+1,2);
-	itemsCount=(uint16_t)c;
+	uint16_t itemsCount=(uint16_t)c;
 	leftPos+=3;
 
 	for(size_t i=0;i<itemsCount;++i)
@@ -96,15 +99,15 @@ void Node::deserialize(char* buf)
 		memcpy(&offset,leftPos,2);
 		leftPos+=2;
 
-		uint16_t kLen;
-		memcpy(&kLen,buf+offset,2);
+		uint16_t kLen=0;
+		memcpy(&kLen,buf+offset,1);
 		++offset;
 
 		std::string key(buf+offset,kLen);
 		offset+=kLen;
 
-		uint16_t vLen;
-		memcpy(&vLen,buf+offset,2);
+		uint16_t vLen=0;
+		memcpy(&vLen,buf+offset,1);
 		++offset;
 
 		std::string value(buf+offset,vLen);
@@ -122,7 +125,26 @@ void Node::deserialize(char* buf)
 	}
 }
 
-std::pair<bool,int> Node::findKeyInNode(std::string& key)
+std::pair<int,Node*> Node::findKey(Node* node,std::string key)
+{
+	std::pair<bool,int> bi=findKeyInNode(key);
+	bool wasFound=bi.first;
+	int index=bi.second;
+	if(wasFound)
+	{
+		return {index,this};
+	}
+
+	if(isLeaf())
+	{
+		return {-1,NULL};
+	}
+
+	Node* nextChild=getNode(childNodes[index]);
+	return findKey(nextChild,key);
+}
+
+std::pair<bool,int> Node::findKeyInNode(std::string key)
 {
 	for(size_t i=0;i<items.size();++i)
 	{
@@ -130,12 +152,17 @@ std::pair<bool,int> Node::findKeyInNode(std::string& key)
 		{
 			return {true,i};
 		}
-		if(items[i]->key>key)//待查找key比第一个Item还小
+		if(items[i]->key>key)//找到第一个比待查key大的Item
 		{
 			return {false,i};
 		}
 	}
 	return {false,items.size()};//待查找的key比最后一个Item还大
+}
+
+Node* Node::getNode(PageNum pagenum)
+{
+	return dal->getNode(pagenum);
 }
 
 Node::~Node(){}

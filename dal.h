@@ -5,6 +5,8 @@
 #include "freelist.h"
 #include "node.h"
 
+class Node;
+
 class Page
 {
 public:

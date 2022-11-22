@@ -113,7 +113,7 @@ Node* Dal::getNode(PageNum pagenum)
 {
 	Page* page=readPage(pagenum);
 	Node* node=new Node();
-	node->deserialize(p->data);
+	node->deserialize(page->data);
 	node->pageNum=pagenum;
 	return node;
 }
