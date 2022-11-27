@@ -1,12 +1,17 @@
 #include "node.h"
+#include "defs.h"
 #include <string.h>
 #include <string>
+#include <vector>
+#include <initializer_list>
 
 Item::Item(std::string& k,std::string& v):key(k),value(v){}
 
 Item::~Item(){}
 
 Node::Node(){}
+
+Node::Node(std::vector<Item*> iv,std::vector<PageNum> pv):items(iv),childNodes(pv){}
 
 bool Node::isLeaf()
 {
@@ -125,25 +130,6 @@ void Node::deserialize(char* buf)
 	}
 }
 
-std::pair<int,Node*> Node::findKey(Node* node,std::string key)
-{
-	std::pair<bool,int> bi=findKeyInNode(key);
-	bool wasFound=bi.first;
-	int index=bi.second;
-	if(wasFound)
-	{
-		return {index,this};
-	}
-
-	if(isLeaf())
-	{
-		return {-1,NULL};
-	}
-
-	Node* nextChild=getNode(childNodes[index]);
-	return findKey(nextChild,key);
-}
-
 std::pair<bool,int> Node::findKeyInNode(std::string key)
 {
 	for(size_t i=0;i<items.size();++i)
@@ -160,9 +146,124 @@ std::pair<bool,int> Node::findKeyInNode(std::string key)
 	return {false,items.size()};//待查找的key比最后一个Item还大
 }
 
+std::pair<int,Node*> Node::findKeyHelper(std::string key,bool exact,std::vector<int>& ancestorsIndexes)
+{
+	std::pair<bool,int> bi=findKeyInNode(key);
+	bool wasFound=bi.first;
+	int index=bi.second;
+	if(wasFound) return {index,this};
+
+	if(isLeaf())
+	{
+		if(exact) return {-1,NULL};
+		return {index,this};
+	}
+
+	ancestorsIndexes.push_back(index);//保存查找路径
+	Node* nextChild=getNode(childNodes[index]);
+	return nextChild->findKeyHelper(key,exact,ancestorsIndexes);
+}
+
+std::pair<int,Node*> Node::findKey(std::string key,bool exact,std::vector<int>& ancestorIndexes)
+{
+	ancestorIndexes=std::vector<int>{0};
+	std::pair<int,Node*> in=findKeyHelper(key,exact,ancestorIndexes);
+	int index=in.first;
+	Node* node=in.second;
+	return {index,node};
+}
+
 Node* Node::getNode(PageNum pagenum)
 {
 	return dal->getNode(pagenum);
+}
+
+int Node::addItem(Item* item,int insertionIndex)
+{
+	if(items.size()==insertionIndex)
+	{
+		items.push_back(item);
+		return insertionIndex;
+	}
+
+	items.insert(items.begin()+insertionIndex,item);
+	return insertionIndex;
+}
+
+Node* Node::writeNode()
+{
+	return dal->writeNode(this);
+}
+
+int Node::elementSize(int i)
+{
+	int size=0;
+	size+=items[i]->key.size();
+	size+=items[i]->value.size();
+	size+=PageNumSize;
+	return size;
+}
+
+int Node::nodeSize()
+{
+	int size=0;
+	size+=NodeHeaderSize;
+	for(size_t i=0;i<items.size();++i)
+	{
+		size+=elementSize(i);
+	}
+
+	size+=PageNumSize;//子结点数比item数多1
+	return size;
+}
+
+//this是nodeToSplit的父结点,nodeToSplitIndex是nodeToSplit在this的childNodes中的下标
+void Node::split(Node* nodeToSplit,int nodeToSplitIndex)
+{
+	int splitIndex=nodeToSplit->dal->getSplitIndex(nodeToSplit);
+
+	Item* middleItem=nodeToSplit->items[splitIndex];
+	Node* newNode;
+
+	if(nodeToSplit->isLeaf())
+	{
+		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{});
+		newNode->writeNode();
+		nodeToSplit->items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
+	}
+	else
+	{
+		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{nodeToSplit->childNodes.begin()+splitIndex+1,nodeToSplit->childNodes.end()});
+		newNode->writeNode();
+		items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
+		childNodes=std::vector<PageNum>{nodeToSplit->childNodes.begin(),nodeToSplit->childNodes.begin()+splitIndex+1};
+	}
+	this->addItem(middleItem,nodeToSplitIndex);//把分离位置的Item移到根结点上
+	//把新分出来的结点加到子结点数组相应位置
+	if(childNodes.size()==nodeToSplitIndex+1)
+	{
+		childNodes.push_back(newNode->pageNum);
+	}
+	else
+	{
+		childNodes.insert(childNodes.begin()+nodeToSplitIndex+1,newNode->pageNum);		
+	}
+
+	writeNodes({this,nodeToSplit});
+	delete newNode;
+}
+
+void Node::writeNodes(std::initializer_list<Node*> nodeList)
+{
+	for(Node* n:nodeList)
+	{
+		n->writeNode();
+	}
+}
+
+bool Node::isOverPopulated()
+{
+	return dal->isOverPopulated(this);
 }
 
 Node::~Node(){}

@@ -6,8 +6,12 @@
 #include <sys/types.h>
 #include <malloc.h>
 
-Dal::Dal(const char* path):pageSize(getpagesize())
+Dal::Dal(const char* path,Options* options)
 {
+	meta=new Meta();
+	pageSize=options->pageSize;
+	minFillPercent=options->minFillPercent;
+	maxFillPercent=options->maxFillPercent;
 	if(0==access(path,F_OK))
 	{
 		FILE* f=fopen(path,"r+");
@@ -31,9 +35,11 @@ Dal::Dal(const char* path):pageSize(getpagesize())
 		}
 		file=f;
 		freelist=new Freelist();
-		meta=new Meta();
 		meta->freelistPage=freelist->getNextPage();
 		writeFreelist();
+		Node* collectionsNode=new Node();
+		writeNode(collectionsNode);
+		meta->root=collectionsNode->pageNum;
 		writeMeta();
 	}
 }
@@ -116,6 +122,52 @@ Node* Dal::getNode(PageNum pagenum)
 	node->deserialize(page->data);
 	node->pageNum=pagenum;
 	return node;
+}
+
+Node* Dal::writeNode(Node* node)
+{
+	Page* page=allocateEmptyPage();
+	if(node->pageNum==0)
+	{
+		page->num=freelist->getNextPage();
+		node->pageNum=page->num;
+	}
+	else
+	{
+		page->num=node->pageNum;
+	}
+	node->serialize(page->data);
+	writePage(page);
+	return node;
+}
+
+float Dal::maxThreshold()
+{
+	return maxFillPercent*(float)pageSize;
+}
+
+bool Dal::isOverPopulated(Node* node)
+{
+	return (float)node->nodeSize()>maxThreshold();
+}
+
+float Dal::minThreshold()
+{
+	return minFillPercent*(float)pageSize;
+}
+
+int Dal::getSplitIndex(Node* node)
+{
+	int size=0;
+	size+=NodeHeaderSize;
+
+	for(size_t i=0;i<node->items.size();++i)
+	{
+		size+=node->elementSize(i);
+		if((float)size>minThreshold()&&i<node->items.size()-1)
+			return i+1;//第0~i个item留在原地
+	}
+	return -1;
 }
 
 Dal::~Dal()

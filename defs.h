@@ -6,6 +6,7 @@
 
 typedef uint64_t PageNum;
 const int PageNumSize=8;	//页号用几Byte存储
-const int MetaPageNum=0;		//Meta页号
+const int MetaPageNum=0;	//Meta页号
+const int NodeHeaderSize=3;	//Node序列化后头部大小1Byte（isLeaf）+2Byte（itemNum）
 
 #endif
