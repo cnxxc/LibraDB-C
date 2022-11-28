@@ -9,9 +9,9 @@ Item::Item(std::string& k,std::string& v):key(k),value(v){}
 
 Item::~Item(){}
 
-Node::Node(){}
+Node::Node(Dal* d):dal(d){}
 
-Node::Node(std::vector<Item*> iv,std::vector<PageNum> pv):items(iv),childNodes(pv){}
+Node::Node(Dal* d,std::vector<Item*> iv,std::vector<PageNum> pv):dal(d),items(iv),childNodes(pv){}
 
 bool Node::isLeaf()
 {
@@ -227,13 +227,13 @@ void Node::split(Node* nodeToSplit,int nodeToSplitIndex)
 
 	if(nodeToSplit->isLeaf())
 	{
-		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{});
+		newNode=new Node(dal,std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{});
 		newNode->writeNode();
 		nodeToSplit->items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
 	}
 	else
 	{
-		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{nodeToSplit->childNodes.begin()+splitIndex+1,nodeToSplit->childNodes.end()});
+		newNode=new Node(dal,std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{nodeToSplit->childNodes.begin()+splitIndex+1,nodeToSplit->childNodes.end()});
 		newNode->writeNode();
 		items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
 		childNodes=std::vector<PageNum>{nodeToSplit->childNodes.begin(),nodeToSplit->childNodes.begin()+splitIndex+1};

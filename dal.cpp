@@ -27,7 +27,7 @@ Dal::Dal(const char* path,Options* options)
 	}	
 	else
 	{
-		FILE* f=fopen(path,"w");
+		FILE* f=fopen(path,"w+");
 		if(f==NULL)
 		{
 			fprintf(stderr,"File: %s open failed!\n",path);
@@ -37,7 +37,7 @@ Dal::Dal(const char* path,Options* options)
 		freelist=new Freelist();
 		meta->freelistPage=freelist->getNextPage();
 		writeFreelist();
-		Node* collectionsNode=new Node();
+		Node* collectionsNode=new Node(this);
 		writeNode(collectionsNode);
 		meta->root=collectionsNode->pageNum;
 		writeMeta();
@@ -118,7 +118,7 @@ Page* Dal::writeMeta()
 Node* Dal::getNode(PageNum pagenum)
 {
 	Page* page=readPage(pagenum);
-	Node* node=new Node();
+	Node* node=new Node(this);
 	node->deserialize(page->data);
 	node->pageNum=pagenum;
 	return node;
@@ -138,6 +138,7 @@ Node* Dal::writeNode(Node* node)
 	}
 	node->serialize(page->data);
 	writePage(page);
+	delete page;
 	return node;
 }
 

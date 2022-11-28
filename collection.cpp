@@ -13,7 +13,8 @@ void Collection::Put(std::string key,std::string value)
 	Node* r;
 	if(root==0)//创建根结点
 	{
-		r=dal->writeNode(new Node({i},{}));
+		r=new Node(dal,{i},{});
+		dal->writeNode(r);
 		root=r->pageNum;
 		return;
 	}
@@ -26,6 +27,7 @@ void Collection::Put(std::string key,std::string value)
 	std::pair<int,Node*> in=r->findKey(i->key,false,ancestorIndexes);
 	int insertionIndex=in.first;
 	Node* nodeToInsertIn=in.second;
+	nodeToInsertIn->dal=dal;
 
 	if(!nodeToInsertIn->items.empty()&&insertionIndex<nodeToInsertIn->items.size()&&key==nodeToInsertIn->items[insertionIndex]->key)
 		nodeToInsertIn->items[insertionIndex]=i;
@@ -35,7 +37,7 @@ void Collection::Put(std::string key,std::string value)
 
 	std::vector<Node*> ancestors=getNodes(ancestorIndexes);
 
-	for(size_t i=ancestors.size()-2;i>=0;--i)
+	for(int i=ancestors.size()-2;i>=0;--i)
 	{
 		Node* pnode=ancestors[i];
 		Node* node=ancestors[i+1];
@@ -47,12 +49,14 @@ void Collection::Put(std::string key,std::string value)
 	Node* rootNode=ancestors[0];
 	if(rootNode->isOverPopulated())
 	{
-		Node* newRoot=new Node(std::vector<Item*>{},std::vector<PageNum>{rootNode->pageNum});
+		Node* newRoot=new Node(dal,std::vector<Item*>{},std::vector<PageNum>{rootNode->pageNum});
 		newRoot->split(rootNode,0);//根结点只有一个，因此下标为0
 
 		newRoot=dal->writeNode(newRoot);
 		root=newRoot->pageNum;
 	}
+
+	delete r;
 }
 
 std::vector<Node*> Collection::getNodes(std::vector<int> indexes)

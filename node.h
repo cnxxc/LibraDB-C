@@ -23,8 +23,8 @@ public:
 class Node
 {
 public:
-	Node();
-	Node(std::vector<Item*> iv,std::vector<PageNum> pv);		//用items和childNodes构造
+	Node(Dal* d);
+	Node(Dal* d,std::vector<Item*> iv,std::vector<PageNum> pv);		//用items和childNodes构造
 	bool isLeaf();
 	char* serialize(char* buf);
 	void deserialize(char* buf);
