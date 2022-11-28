@@ -39,6 +39,8 @@ public:
 	void split(Node* nodeToSplit,int nodeToSplitIndex);
 	void writeNodes(std::initializer_list<Node*> nodeList);
 	bool isOverPopulated();
+	void removeItemFromLeaf(int index);
+	std::vector<int> removeItemFromInternal(int index);
 	~Node();
 
 public:

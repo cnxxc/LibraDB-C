@@ -193,6 +193,7 @@ int Node::addItem(Item* item,int insertionIndex)
 Node* Node::writeNode()
 {
 	return dal->writeNode(this);
+
 }
 
 int Node::elementSize(int i)
@@ -264,6 +265,34 @@ void Node::writeNodes(std::initializer_list<Node*> nodeList)
 bool Node::isOverPopulated()
 {
 	return dal->isOverPopulated(this);
+}
+
+void Node::removeItemFromLeaf(int index)
+{
+	items.erase(items.begin()+index);
+	writeNode();
+}
+
+std::vector<int> Node::removeItemFromInternal(int index)
+{
+	std::vector<int> affectedNodes;
+	affectedNodes.push_back(index);
+
+	Node* aNode=getNode(childNodes[index]);
+
+	//用items[index]左子树上的最大值（每层取最右值）替换掉items[index]
+	while(!aNode->isLeaf())
+	{
+		int traversingIndex=childNodes.size()-1;
+		aNode=getNode(aNode->childNodes[traversingIndex]);
+		affectedNodes.push_back(traversingIndex);
+	}
+
+	items[index]=aNode->items.back();
+	aNode->items.pop_back();
+	writeNodes({this,aNode});
+
+	return affectedNodes;
 }
 
 Node::~Node(){}

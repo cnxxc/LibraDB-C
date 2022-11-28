@@ -2,3 +2,4 @@ a.out
 db.db
 *.swp
 mainTest
+.vscode/
