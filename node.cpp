@@ -296,3 +296,24 @@ std::vector<int> Node::removeItemFromInternal(int index)
 }
 
 Node::~Node(){}
+
+bool isFirst(int index)
+{
+	return index==0;
+}
+
+//p是根结点，b是underflow结点，a是b的左结点
+void rotateRight(Node* aNode,Node* pNode,Node* bNode,int bNodeIndex)
+{
+	//将左子树的尾Item移到根结点相应位置
+	Item* aNodeItem=aNode->items.back();
+	aNode->items.pop_back();
+	int pNodeItemIndex=bNodeIndex-1;
+	if(isFirst(bNodeIndex))
+		pNodeItemIndex=0;
+	Item* pNodeItem=pNode->items[pNodeItemIndex];
+	pNode->items[pNodeItemIndex]=aNodeItem;
+
+	//把根结点移出的Item移到右子树的头部
+	bNode->items.insert(bNode->items.begin(),pNodeItem);
+}
