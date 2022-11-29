@@ -41,6 +41,9 @@ public:
 	bool isOverPopulated();
 	void removeItemFromLeaf(int index);
 	std::vector<int> removeItemFromInternal(int index);
+	void merge(Node* bNode,int bNodeIndex);
+	bool canSpareAnElement();//是否可以分割（大小高于下限）
+	void rebalanceRemove(Node* unbalancedNode,int unbalancedNodeIndex);
 	~Node();
 
 public:

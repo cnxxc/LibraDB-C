@@ -171,6 +171,11 @@ int Dal::getSplitIndex(Node* node)
 	return -1;
 }
 
+void Dal::deleteNode(PageNum pagenum)
+{
+	freelist->releasePage(pagenum);
+}
+
 Dal::~Dal()
 {
 	if(file==NULL)

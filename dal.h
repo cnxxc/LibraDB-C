@@ -39,6 +39,7 @@ public:
 	bool isOverPopulated(Node* node);
 	float minThreshold();
 	int getSplitIndex(Node* node);
+	void deleteNode(PageNum pagenum);
 	~Dal();	
 public:
 	FILE* file;
