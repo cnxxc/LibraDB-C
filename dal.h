@@ -40,6 +40,7 @@ public:
 	float minThreshold();
 	int getSplitIndex(Node* node);
 	void deleteNode(PageNum pagenum);
+	bool isUnderPopulated(Node* node);
 	~Dal();	
 public:
 	FILE* file;

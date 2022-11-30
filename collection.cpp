@@ -83,3 +83,43 @@ Item* Collection::Find(std::string key)
 		return NULL;
 	return containingNode->items[index];
 }
+
+void Collection::Remove(std::string key)
+{
+	Node* rootNode=dal->getNode(root);
+	std::vector<int> ancestorsIndexes;
+	std::pair<int,Node*> in=rootNode->findKey(key,true,ancestorsIndexes);
+	int removeItemIndex=in.first;
+	Node* nodeToRemoveFrom=in.second;
+	
+	if(removeItemIndex==-1) return;
+
+	if(nodeToRemoveFrom->isLeaf())
+	{
+		nodeToRemoveFrom->removeItemFromLeaf(removeItemIndex);
+	}
+	else
+	{
+		std::vector<int> affectedNodes=nodeToRemoveFrom->removeItemFromInternal(removeItemIndex);
+		for(int i=0;i<affectedNodes.size();++i)
+		{
+			ancestorsIndexes.push_back(affectedNodes[i]);
+		}
+	}
+
+	std::vector<Node*> ancestors=getNodes(ancestorsIndexes);
+
+	for(int i=ancestors.size()-2;i>=0;--i)
+	{
+		Node* pNode=ancestors[i];
+		Node* node=ancestors[i+1];
+		if(node->isUnderPopulated())
+		{
+			pNode->rebalanceRemove(node,ancestorsIndexes[i+1]);
+		}
+	}
+
+	rootNode=ancestors[0];
+	if(rootNode->items.empty()&&!rootNode->childNodes.empty())
+		root=ancestors[1]->pageNum;
+}

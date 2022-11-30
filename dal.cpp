@@ -176,6 +176,11 @@ void Dal::deleteNode(PageNum pagenum)
 	freelist->releasePage(pagenum);
 }
 
+bool Dal::isUnderPopulated(Node* node)
+{
+	return (float)node->nodeSize()<minThreshold();
+}
+
 Dal::~Dal()
 {
 	if(file==NULL)

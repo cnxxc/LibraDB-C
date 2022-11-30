@@ -280,7 +280,7 @@ std::vector<int> Node::removeItemFromInternal(int index)
 
 	Node* aNode=getNode(childNodes[index]);
 
-	//用items[index]左子树上的最大值（每层取最右值）替换掉items[index]
+	//用被删Item左子树上的最大Item替换空位（迭代到叶子结点，即小于被删Item的最大Item）
 	while(!aNode->isLeaf())
 	{
 		int traversingIndex=childNodes.size()-1;
@@ -352,14 +352,20 @@ void Node::rebalanceRemove(Node* unbalancedNode,int unbalancedNodeIndex)
 		}
 	}
 
-	//unbalancedNodeIndex在最左边且其右兄弟无法提供左旋，则与右兄弟合并
+	//unbalancedNode在最左边且其右兄弟无法提供左旋，则与右兄弟合并
 	if(unbalancedNodeIndex==0)
 	{
 		Node* rightNode=getNode(childNodes[unbalancedNodeIndex+1]);
 		return pNode->merge(rightNode,unbalancedNodeIndex+1);
 	}
 
+	//unbalancedNode不在最左边且其右兄弟无法提供左旋，则与左兄弟合并
 	return pNode->merge(unbalancedNode,unbalancedNodeIndex);
+}
+
+bool Node::isUnderPopulated()
+{
+	return dal->isUnderPopulated(this);
 }
 
 Node::~Node(){}

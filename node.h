@@ -30,7 +30,7 @@ public:
 	void deserialize(char* buf);
 	std::pair<bool,int> findKeyInNode(std::string key);			//返回是否存在、应该在的位置
 	std::pair<int,Node*> findKeyHelper(std::string key,bool exact,std::vector<int>& ancestorsIndexes);//exact参数为false时，若找不到key，会返回其应该插入的位置
-	std::pair<int,Node*> findKey(std::string key,bool exact,std::vector<int>& ancestorIndexes);	//返回所在结点中的下标（不存在为-1）、所在结点
+	std::pair<int,Node*> findKey(std::string key,bool exact,std::vector<int>& ancestorIndexes);	//返回所在结点中的下标（不存在为-1）、所在结点，ancestorIndexes是从根结点开始的搜索路径上的Node下标
 	Node* getNode(PageNum pagenum);
 	Node* writeNode();
 	int addItem(Item* item,int insertionIndex);
@@ -40,10 +40,11 @@ public:
 	void writeNodes(std::initializer_list<Node*> nodeList);
 	bool isOverPopulated();
 	void removeItemFromLeaf(int index);
-	std::vector<int> removeItemFromInternal(int index);
+	std::vector<int> removeItemFromInternal(int index);//删除非叶子结点上的Item，返回从删除Item左子树开始的每层被影响的子结点的下标（不含被删Item所在结点的下标）
 	void merge(Node* bNode,int bNodeIndex);
 	bool canSpareAnElement();//是否可以分割（大小高于下限）
 	void rebalanceRemove(Node* unbalancedNode,int unbalancedNodeIndex);
+	bool isUnderPopulated();
 	~Node();
 
 public:
