@@ -24,6 +24,11 @@ int main()
 	c->Put("Key6","Value6");
 	Item* item=c->Find("Key1");
 	std::cout<<"key is: "<<item->key<<",value is: "<<item->value<<std::endl;
+	c->Remove("Key1");
+	item=c->Find("Key1");
+	dal->writeFreelist();
+	if(item==NULL)
+		std::cout<<"item is: NULL"<<std::endl;
 	delete dal;
 	return 0;
 }

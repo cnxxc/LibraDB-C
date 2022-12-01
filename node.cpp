@@ -9,6 +9,64 @@ Item::Item(std::string& k,std::string& v):key(k),value(v){}
 
 Item::~Item(){}
 
+bool isFirst(int index)
+{
+	return index==0;
+}
+
+bool isLast(int index,Node* parentNode)
+{
+	return index==parentNode->items.size();
+}
+
+//p是根结点，b是underflow结点，a是b的左结点，bNodeIndex是bNode在p的childNode中的下标
+void rotateRight(Node* aNode,Node* pNode,Node* bNode,int bNodeIndex)
+{
+	//将左子树的尾Item移到根结点相应位置
+	Item* aNodeItem=aNode->items.back();
+	aNode->items.pop_back();
+	int pNodeItemIndex=bNodeIndex-1;
+	if(isFirst(bNodeIndex))
+		pNodeItemIndex=0;
+	Item* pNodeItem=pNode->items[pNodeItemIndex];
+	pNode->items[pNodeItemIndex]=aNodeItem;
+
+	//把根结点移出的Item移到右子树的头部
+	bNode->items.insert(bNode->items.begin(),pNodeItem);
+
+	//调整a和b的子结点
+	if(!aNode->isLeaf())
+	{
+		PageNum childNodeToShift=aNode->childNodes.back();
+		aNode->childNodes.pop_back();
+		bNode->childNodes.insert(bNode->childNodes.begin(),childNodeToShift);
+	}
+}
+
+//p是根结点，a是underflow结点，b是a的右结点，aNodeIndex是aNode在p的childNode中的下标
+void rotateLeft(Node* aNode,Node* pNode,Node* bNode,int aNodeIndex)
+{
+	//将右子树的头Item移到根结点相应位置
+	Item* bNodeItem=bNode->items.front();
+	bNode->items.erase(bNode->items.begin());
+	int pNodeItemIndex=aNodeIndex;
+	if(isLast(aNodeIndex,pNode))
+		pNodeItemIndex=pNode->items.size()-1;
+	Item* pNodeItem=pNode->items[pNodeItemIndex];
+	pNode->items[pNodeItemIndex]=bNodeItem;
+
+	//把根结点移出的Item移到右子树的头部
+	aNode->items.push_back(pNodeItem);
+
+	//调整a和b的子结点
+	if(!bNode->isLeaf())
+	{
+		PageNum childNodeToShift=bNode->childNodes.front();
+		bNode->childNodes.erase(bNode->childNodes.begin());
+		aNode->childNodes.push_back(childNodeToShift);
+	}
+}
+
 Node::Node(Dal* d):dal(d){}
 
 Node::Node(Dal* d,std::vector<Item*> iv,std::vector<PageNum> pv):dal(d),items(iv),childNodes(pv){}
@@ -298,8 +356,10 @@ std::vector<int> Node::removeItemFromInternal(int index)
 //将bNode元素合并到它的左子树上
 void Node::merge(Node* bNode,int bNodeIndex)
 {
+	//bNode的左兄弟
 	Node* aNode=getNode(childNodes[bNodeIndex-1]);
 
+	//aNode和bNode的公共父Item
 	Item* pNodeItem=items[bNodeIndex-1];
 	items.erase(items.begin()+bNodeIndex-1);
 	aNode->items.push_back(pNodeItem);
@@ -370,60 +430,3 @@ bool Node::isUnderPopulated()
 
 Node::~Node(){}
 
-bool isFirst(int index)
-{
-	return index==0;
-}
-
-bool isLast(int index,Node* parentNode)
-{
-	return index==parentNode->items.size();
-}
-
-//p是根结点，b是underflow结点，a是b的左结点，bNodeIndex是bNode在p的childNode中的下标
-void rotateRight(Node* aNode,Node* pNode,Node* bNode,int bNodeIndex)
-{
-	//将左子树的尾Item移到根结点相应位置
-	Item* aNodeItem=aNode->items.back();
-	aNode->items.pop_back();
-	int pNodeItemIndex=bNodeIndex-1;
-	if(isFirst(bNodeIndex))
-		pNodeItemIndex=0;
-	Item* pNodeItem=pNode->items[pNodeItemIndex];
-	pNode->items[pNodeItemIndex]=aNodeItem;
-
-	//把根结点移出的Item移到右子树的头部
-	bNode->items.insert(bNode->items.begin(),pNodeItem);
-
-	//调整a和b的子结点
-	if(!aNode->isLeaf())
-	{
-		PageNum childNodeToShift=aNode->childNodes.back();
-		aNode->childNodes.pop_back();
-		bNode->childNodes.insert(bNode->childNodes.begin(),childNodeToShift);
-	}
-}
-
-//p是根结点，a是underflow结点，b是a的右结点，aNodeIndex是aNode在p的childNode中的下标
-void rotateLeft(Node* aNode,Node* pNode,Node* bNode,int aNodeIndex)
-{
-	//将右子树的头Item移到根结点相应位置
-	Item* bNodeItem=bNode->items.front();
-	bNode->items.erase(bNode->items.begin());
-	int pNodeItemIndex=aNodeIndex;
-	if(isLast(aNodeIndex,pNode))
-		pNodeItemIndex=pNode->items.size()-1;
-	Item* pNodeItem=pNode->items[pNodeItemIndex];
-	pNode->items[pNodeItemIndex]=bNodeItem;
-
-	//把根结点移出的Item移到右子树的头部
-	aNode->items.push_back(pNodeItem);
-
-	//调整a和b的子结点
-	if(!bNode->isLeaf())
-	{
-		PageNum childNodeToShift=bNode->childNodes.front();
-		bNode->childNodes.erase(bNode->childNodes.begin());
-		aNode->childNodes.push_back(childNodeToShift);
-	}
-}
