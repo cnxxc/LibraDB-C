@@ -15,7 +15,7 @@ int main()
 	options->minFillPercent=0.0125;
 	options->maxFillPercent=0.025;
 	Dal* dal=new Dal("./mainTest",options);
-	Collection* c=new Collection(dal,"collection1",dal->meta->root);
+	Collection* c=new Collection("collection1",dal->meta->root);
 	c->Put("Key1","Value1");
 	c->Put("Key2","Value2");
 	c->Put("Key3","Value3");

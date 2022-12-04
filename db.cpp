@@ -19,3 +19,15 @@ void DB::Close()
 {
     delete dal;
 }
+
+Tx* DB::ReadTx()
+{
+    pthread_rwlock_rdlock(RWMutex);
+    return new Tx{this,false};
+}
+
+Tx* DB::WriteTx()
+{
+    pthread_rwlock_wrlock(RWMutex);
+    return new Tx{this,true};
+}

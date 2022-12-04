@@ -37,7 +37,7 @@ Dal::Dal(const char* path,Options* options)
 		freelist=new Freelist();
 		meta->freelistPage=freelist->getNextPage();
 		writeFreelist();
-		Node* collectionsNode=new Node(this);
+		Node* collectionsNode=new Node();
 		writeNode(collectionsNode);
 		meta->root=collectionsNode->pageNum;
 		writeMeta();
@@ -118,7 +118,7 @@ Page* Dal::writeMeta()
 Node* Dal::getNode(PageNum pagenum)
 {
 	Page* page=readPage(pagenum);
-	Node* node=new Node(this);
+	Node* node=new Node();
 	node->deserialize(page->data);
 	node->pageNum=pagenum;
 	return node;

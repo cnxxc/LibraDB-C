@@ -5,7 +5,7 @@
 #include <vector>
 #include <initializer_list>
 
-Item::Item(std::string& k,std::string& v):key(k),value(v){}
+Item::Item(const char* k,const char* v):key(k),value(v){}
 
 Item::~Item(){}
 
@@ -67,9 +67,9 @@ void rotateLeft(Node* aNode,Node* pNode,Node* bNode,int aNodeIndex)
 	}
 }
 
-Node::Node(Dal* d):dal(d){}
+Node::Node(){}
 
-Node::Node(Dal* d,std::vector<Item*> iv,std::vector<PageNum> pv):dal(d),items(iv),childNodes(pv){}
+Node::Node(std::vector<Item*> iv,std::vector<PageNum> pv):items(iv),childNodes(pv){}
 
 bool Node::isLeaf()
 {
@@ -86,7 +86,7 @@ bool Node::isLeaf()
 char* Node::serialize(char* buf)
 {
 	char* leftPos=buf;
-	int rightPos=dal->pageSize-1;
+	int rightPos=PageSize-1;
 	uint64_t bitSetVar=0;
 	bool is_Leaf=isLeaf();
 	if(is_Leaf)
@@ -108,23 +108,21 @@ char* Node::serialize(char* buf)
 			leftPos+=PageNumSize;
 		}
 
-		size_t kLen=item->key.size();
-		size_t vLen=item->value.size();
+		size_t kLen=strlen(item->key);
+		size_t vLen=strlen(item->value);
 
 		uint16_t offset=(uint16_t)(rightPos-kLen-vLen-2);//右边存子结点信息（key长度、key、value长度、value）
 		memcpy(leftPos,&offset,2);
 		leftPos+=2;
 
 		rightPos-=vLen;
-		const char* v=item->value.data();
-		memcpy(buf+rightPos,v,vLen);
+		memcpy(buf+rightPos,item->value,vLen);
 
 		--rightPos;
 		buf[rightPos]=(char)vLen;
 
 		rightPos-=kLen;
-		const char* k=item->key.data();
-		memcpy(buf+rightPos,k,kLen);
+		memcpy(buf+rightPos,item->key,kLen);
 
 		--rightPos;
 		buf[rightPos]=(char)kLen;
@@ -166,14 +164,17 @@ void Node::deserialize(char* buf)
 		memcpy(&kLen,buf+offset,1);
 		++offset;
 
-		std::string key(buf+offset,kLen);
+		//std::string key(buf+offset,kLen);
+		char* key=(char*)malloc(kLen*sizeof(char)); 
+		memcpy(key,buf+offset,kLen);
 		offset+=kLen;
 
 		uint16_t vLen=0;
 		memcpy(&vLen,buf+offset,1);
 		++offset;
 
-		std::string value(buf+offset,vLen);
+		char* value=(char*)malloc(vLen*sizeof(char)); 
+		memcpy(value,buf+offset,vLen);
 		offset+=vLen;
 
 		Item* item=new Item(key,value);
@@ -233,7 +234,7 @@ std::pair<int,Node*> Node::findKey(std::string key,bool exact,std::vector<int>& 
 
 Node* Node::getNode(PageNum pagenum)
 {
-	return dal->getNode(pagenum);
+	return tx->getNode(pagenum);
 }
 
 int Node::addItem(Item* item,int insertionIndex)
@@ -250,15 +251,15 @@ int Node::addItem(Item* item,int insertionIndex)
 
 Node* Node::writeNode()
 {
-	return dal->writeNode(this);
+	return tx->writeNode(this);
 
 }
 
 int Node::elementSize(int i)
 {
 	int size=0;
-	size+=items[i]->key.size();
-	size+=items[i]->value.size();
+	size+=strlen(items[i]->key);
+	size+=strlen(items[i]->value);
 	size+=PageNumSize;
 	return size;
 }
@@ -279,20 +280,20 @@ int Node::nodeSize()
 //this是nodeToSplit的父结点,nodeToSplitIndex是nodeToSplit在this的childNodes中的下标
 void Node::split(Node* nodeToSplit,int nodeToSplitIndex)
 {
-	int splitIndex=nodeToSplit->dal->getSplitIndex(nodeToSplit);
+	int splitIndex=nodeToSplit->tx->db->dal->getSplitIndex(nodeToSplit);
 
 	Item* middleItem=nodeToSplit->items[splitIndex];
 	Node* newNode;
 
 	if(nodeToSplit->isLeaf())
 	{
-		newNode=new Node(dal,std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{});
+		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{});
 		newNode->writeNode();
 		nodeToSplit->items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
 	}
 	else
 	{
-		newNode=new Node(dal,std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{nodeToSplit->childNodes.begin()+splitIndex+1,nodeToSplit->childNodes.end()});
+		newNode=new Node(std::vector<Item*>{nodeToSplit->items.begin()+splitIndex+1,nodeToSplit->items.end()},std::vector<PageNum>{nodeToSplit->childNodes.begin()+splitIndex+1,nodeToSplit->childNodes.end()});
 		newNode->writeNode();
 		items=std::vector<Item*>{nodeToSplit->items.begin(),nodeToSplit->items.begin()+splitIndex};
 		childNodes=std::vector<PageNum>{nodeToSplit->childNodes.begin(),nodeToSplit->childNodes.begin()+splitIndex+1};
@@ -322,7 +323,7 @@ void Node::writeNodes(std::initializer_list<Node*> nodeList)
 
 bool Node::isOverPopulated()
 {
-	return dal->isOverPopulated(this);
+	return tx->db->dal->isOverPopulated(this);
 }
 
 void Node::removeItemFromLeaf(int index)
@@ -373,12 +374,12 @@ void Node::merge(Node* bNode,int bNodeIndex)
 	}
 
 	writeNodes({aNode,this});
-	dal->deleteNode(bNode->pageNum);
+	tx->db->dal->deleteNode(bNode->pageNum);
 }
 
 bool Node::canSpareAnElement()
 {
-	int splitIndex=dal->getSplitIndex(this);
+	int splitIndex=tx->db->dal->getSplitIndex(this);
 	if(splitIndex==-1) return false;
 	return true;
 }
@@ -425,7 +426,7 @@ void Node::rebalanceRemove(Node* unbalancedNode,int unbalancedNodeIndex)
 
 bool Node::isUnderPopulated()
 {
-	return dal->isUnderPopulated(this);
+	return tx->db->dal->isUnderPopulated(this);
 }
 
 Node::~Node(){}
