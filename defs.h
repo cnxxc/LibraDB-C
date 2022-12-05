@@ -12,5 +12,7 @@ const int NodeHeaderSize=3;	//Node序列化后头部大小1Byte（isLeaf）+2Byt
 const int PageSize=getpagesize();
 const int CounterSize=4;
 const int CollectionSize=16;
+const int32_t MagicNumber=0xD00DB00D;
+const int MagicNumberSize=4;
 
 #endif

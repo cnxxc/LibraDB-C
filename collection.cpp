@@ -78,7 +78,7 @@ std::vector<Node*> Collection::getNodes(std::vector<int> indexes)
 	return nodes;
 }
 
-Item* Collection::Find(std::string key)
+Item* Collection::Find(char* key)
 {
 	Node* n=tx->getNode(root);
 	std::vector<int> ancestorIndexes;
@@ -90,7 +90,7 @@ Item* Collection::Find(std::string key)
 	return containingNode->items[index];
 }
 
-void Collection::Remove(std::string key)
+int Collection::Remove(char* key)
 {
 	Node* rootNode=tx->getNode(root);
 	std::vector<int> ancestorsIndexes;
@@ -98,7 +98,8 @@ void Collection::Remove(std::string key)
 	int removeItemIndex=in.first;
 	Node* nodeToRemoveFrom=in.second;
 	
-	if(removeItemIndex==-1) return;
+	if(removeItemIndex==-1) 
+		return removeNotExistKeyErr;
 
 	if(nodeToRemoveFrom->isLeaf())
 	{
@@ -128,15 +129,8 @@ void Collection::Remove(std::string key)
 	rootNode=ancestors[0];
 	if(rootNode->items.empty()&&!rootNode->childNodes.empty())
 		root=ancestors[1]->pageNum;
-}
 
-Item* Collection::Find(std::string key)
-{
-	Node* n=tx->getNode(root);
-	std::vector<int> ancestor;
-	std::pair<int,Node*> in=n->findKey(key,true,ancestor);
-	if(in.first==-1) return NULL;
-	return in.second->items[in.first];
+	return 0;
 }
 
 Item* Collection::serialize()

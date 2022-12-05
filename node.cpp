@@ -5,7 +5,7 @@
 #include <vector>
 #include <initializer_list>
 
-Item::Item(const char* k,const char* v):key(k),value(v){}
+Item::Item(char* k,char* v):key(k),value(v){}
 
 Item::~Item(){}
 
@@ -189,15 +189,15 @@ void Node::deserialize(char* buf)
 	}
 }
 
-std::pair<bool,int> Node::findKeyInNode(std::string key)
+std::pair<bool,int> Node::findKeyInNode(char* key)
 {
 	for(size_t i=0;i<items.size();++i)
 	{
-		if(items[i]->key==key)
+		if(strcmp(items[i]->key,key)==0)
 		{
 			return {true,i};
 		}
-		if(items[i]->key>key)//找到第一个比待查key大的Item
+		if(strcmp(items[i]->key,key)>0)//找到第一个比待查key大的Item
 		{
 			return {false,i};
 		}
@@ -205,7 +205,7 @@ std::pair<bool,int> Node::findKeyInNode(std::string key)
 	return {false,items.size()};//待查找的key比最后一个Item还大
 }
 
-std::pair<int,Node*> Node::findKeyHelper(std::string key,bool exact,std::vector<int>& ancestorsIndexes)
+std::pair<int,Node*> Node::findKeyHelper(char* key,bool exact,std::vector<int>& ancestorsIndexes)
 {
 	std::pair<bool,int> bi=findKeyInNode(key);
 	bool wasFound=bi.first;
@@ -223,7 +223,7 @@ std::pair<int,Node*> Node::findKeyHelper(std::string key,bool exact,std::vector<
 	return nextChild->findKeyHelper(key,exact,ancestorsIndexes);
 }
 
-std::pair<int,Node*> Node::findKey(std::string key,bool exact,std::vector<int>& ancestorIndexes)
+std::pair<int,Node*> Node::findKey(char* key,bool exact,std::vector<int>& ancestorIndexes)
 {
 	ancestorIndexes=std::vector<int>{0};
 	std::pair<int,Node*> in=findKeyHelper(key,exact,ancestorIndexes);
