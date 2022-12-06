@@ -1,11 +1,10 @@
 #include "node.h"
 #include "defs.h"
-#include <string.h>
 #include <string>
 #include <vector>
 #include <initializer_list>
 
-Item::Item(char* k,char* v):key(k),value(v){}
+Item::Item(const char* k,const char* v):key(k),value(v){}
 
 Item::~Item(){}
 
@@ -167,6 +166,7 @@ void Node::deserialize(char* buf)
 		//std::string key(buf+offset,kLen);
 		char* key=(char*)malloc(kLen*sizeof(char)); 
 		memcpy(key,buf+offset,kLen);
+		*(key+kLen)=0;
 		offset+=kLen;
 
 		uint16_t vLen=0;
@@ -175,6 +175,7 @@ void Node::deserialize(char* buf)
 
 		char* value=(char*)malloc(vLen*sizeof(char)); 
 		memcpy(value,buf+offset,vLen);
+		*(value+vLen)=0;
 		offset+=vLen;
 
 		Item* item=new Item(key,value);
@@ -189,7 +190,7 @@ void Node::deserialize(char* buf)
 	}
 }
 
-std::pair<bool,int> Node::findKeyInNode(char* key)
+std::pair<bool,int> Node::findKeyInNode(const char* key)
 {
 	for(size_t i=0;i<items.size();++i)
 	{
@@ -205,7 +206,7 @@ std::pair<bool,int> Node::findKeyInNode(char* key)
 	return {false,items.size()};//待查找的key比最后一个Item还大
 }
 
-std::pair<int,Node*> Node::findKeyHelper(char* key,bool exact,std::vector<int>& ancestorsIndexes)
+std::pair<int,Node*> Node::findKeyHelper(const char* key,bool exact,std::vector<int>& ancestorsIndexes)
 {
 	std::pair<bool,int> bi=findKeyInNode(key);
 	bool wasFound=bi.first;
@@ -223,7 +224,7 @@ std::pair<int,Node*> Node::findKeyHelper(char* key,bool exact,std::vector<int>& 
 	return nextChild->findKeyHelper(key,exact,ancestorsIndexes);
 }
 
-std::pair<int,Node*> Node::findKey(char* key,bool exact,std::vector<int>& ancestorIndexes)
+std::pair<int,Node*> Node::findKey(const char* key,bool exact,std::vector<int>& ancestorIndexes)
 {
 	ancestorIndexes=std::vector<int>{0};
 	std::pair<int,Node*> in=findKeyHelper(key,exact,ancestorIndexes);

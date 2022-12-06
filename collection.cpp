@@ -8,9 +8,9 @@
 
 Collection::Collection(){}
 
-Collection::Collection(char* n,PageNum r):name(n),root(r){}
+Collection::Collection(const char* n,PageNum r):name(n),root(r){}
 
-int Collection::Put(char* key,char* value)
+int Collection::Put(const char* key,const char* value)
 {
 	if(!tx->write) return writeInsideReadTxErr;
 
@@ -61,7 +61,7 @@ int Collection::Put(char* key,char* value)
 		root=newRoot->pageNum;
 	}
 
-	delete r;
+	//delete r;
 	return 0;
 }
 
@@ -78,7 +78,7 @@ std::vector<Node*> Collection::getNodes(std::vector<int> indexes)
 	return nodes;
 }
 
-Item* Collection::Find(char* key)
+Item* Collection::Find(const char* key)
 {
 	Node* n=tx->getNode(root);
 	std::vector<int> ancestorIndexes;
@@ -90,7 +90,7 @@ Item* Collection::Find(char* key)
 	return containingNode->items[index];
 }
 
-int Collection::Remove(char* key)
+int Collection::Remove(const char* key)
 {
 	Node* rootNode=tx->getNode(root);
 	std::vector<int> ancestorsIndexes;
@@ -146,7 +146,8 @@ Item* Collection::serialize()
 
 void Collection::deserialize(Item* item)
 {
-	memcpy(name,item->key,strlen(item->key));
+	//memcpy(const_cast<char*>(name),item->key,strlen(item->key));
+	name=item->key;
 	if(strlen(item->value)!=0)
 	{
 		int leftPos=0;

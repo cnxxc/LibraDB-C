@@ -10,6 +10,7 @@
 
 class Node;
 class DB;
+class Collection;
 
 class Tx
 {
@@ -20,9 +21,9 @@ public:
     void Rollback();
     void Commit();
     Collection* getRootCollection();
-    Collection* getCollection(char* name);
+    Collection* getCollection(const char* name);
     Collection* createCollection(Collection* collection);//将Collection像在Node树上加入Item一样加入Collection树
-    Collection* createCollection(char* name);
+    Collection* createCollection(const char* name);
     int DeleteCollection(char* name);
 public:
     std::unordered_map<PageNum,Node*> dirtyNodes;//修改过的页面

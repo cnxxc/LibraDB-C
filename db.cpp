@@ -12,22 +12,23 @@ DB* Open(const char* path,Options* options)
 
 DB::DB(Dal* d):dal(d)
 {
-    pthread_rwlock_init(RWMutex,NULL);
+    pthread_rwlock_init(&RWMutex,NULL);
 }
 
 void DB::Close()
 {
     delete dal;
+    //delete RWMutex;
 }
 
 Tx* DB::ReadTx()
 {
-    pthread_rwlock_rdlock(RWMutex);
+    pthread_rwlock_rdlock(&RWMutex);
     return new Tx{this,false};
 }
 
 Tx* DB::WriteTx()
 {
-    pthread_rwlock_wrlock(RWMutex);
+    pthread_rwlock_wrlock(&RWMutex);
     return new Tx{this,true};
 }

@@ -7,6 +7,7 @@
 
 class Tx;
 class Dal;
+class Options;
 
 class DB
 {
@@ -16,8 +17,10 @@ public:
     Tx* ReadTx();
     Tx* WriteTx();
 public:
-    pthread_rwlock_t* RWMutex;
+    pthread_rwlock_t RWMutex;
     Dal* dal;
 };
+
+DB* Open(const char* path,Options* options);
 
 #endif

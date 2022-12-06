@@ -5,6 +5,7 @@
 #include "dal.h"
 #include "tx.h"
 #include <string>
+#include <string.h>
 #include <vector>
 #include <initializer_list>
 
@@ -14,11 +15,11 @@ class Tx;
 class Item
 {
 public:
-	Item(char* k,char* v);
+	Item(const char* k,const char* v);
 	~Item();
 public:
-	char* key;
-	char* value;
+	const char* key;
+	const char* value;
 };
 
 
@@ -31,9 +32,9 @@ public:
 	bool isLeaf();
 	char* serialize(char* buf);
 	void deserialize(char* buf);
-	std::pair<bool,int> findKeyInNode(char* key);			//返回是否存在、应该在的位置
-	std::pair<int,Node*> findKeyHelper(char* key,bool exact,std::vector<int>& ancestorsIndexes);//exact参数为false时，若找不到key，会返回其应该插入的位置
-	std::pair<int,Node*> findKey(char* key,bool exact,std::vector<int>& ancestorIndexes);	//返回查找的item在所在结点中的下标（不存在为-1）、所在结点，ancestorIndexes是从根结点开始的搜索路径上的Node下标
+	std::pair<bool,int> findKeyInNode(const char* key);			//返回是否存在、应该在的位置
+	std::pair<int,Node*> findKeyHelper(const char* key,bool exact,std::vector<int>& ancestorsIndexes);//exact参数为false时，若找不到key，会返回其应该插入的位置
+	std::pair<int,Node*> findKey(const char* key,bool exact,std::vector<int>& ancestorIndexes);	//返回查找的item在所在结点中的下标（不存在为-1）、所在结点，ancestorIndexes是从根结点开始的搜索路径上的Node下标
 	Node* getNode(PageNum pagenum);
 	Node* writeNode();
 	int addItem(Item* item,int insertionIndex);

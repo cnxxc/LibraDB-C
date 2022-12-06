@@ -3,6 +3,7 @@
 #include "meta.h"
 #include "node.h"
 #include "collection.h"
+#include "db.h"
 #include <string.h>
 #include <string>
 #include <iostream>
@@ -10,25 +11,30 @@
 
 int main()
 {
-	Options* options=new Options();
-	options->pageSize=getpagesize();
-	options->minFillPercent=0.0125;
-	options->maxFillPercent=0.025;
-	Dal* dal=new Dal("./mainTest",options);
-	Collection* c=new Collection("collection1",dal->meta->root);
-	c->Put("Key1","Value1");
-	c->Put("Key2","Value2");
-	c->Put("Key3","Value3");
-	c->Put("Key4","Value4");
-	c->Put("Key5","Value5");
-	c->Put("Key6","Value6");
-	Item* item=c->Find("Key1");
-	std::cout<<"key is: "<<item->key<<",value is: "<<item->value<<std::endl;
-	c->Remove("Key1");
-	item=c->Find("Key1");
-	dal->writeFreelist();
-	if(item==NULL)
-		std::cout<<"item is: NULL"<<std::endl;
-	delete dal;
+	Options option{};
+	option.maxFillPercent=1;
+	option.minFillPercent=0.5;
+	DB* db=Open("Demo7",&option);
+	Tx* tx=db->WriteTx();
+	const char* collectionName="Demo7Collection";
+	Collection* createdCollection=tx->createCollection(collectionName);
+	const char* newKey="key0";
+	const char* newVal="value0";
+	createdCollection->Put(newKey,newVal);
+	tx->Commit();
+	db->Close();
+	delete db;
+	db=NULL;
+	db=Open("Demo7",&option);
+	delete tx;
+	tx=NULL;
+	tx=db->ReadTx();
+	//delete createdCollection;
+	//createdCollection=NULL;
+	createdCollection=tx->getCollection(collectionName);
+	Item* item=createdCollection->Find(newKey);
+	tx->Commit();
+	db->Close();
+	std::cout<<"key is: "<<item->key<<", value is: "<<item->value<<std::endl;
 	return 0;
 }

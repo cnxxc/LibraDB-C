@@ -25,7 +25,7 @@ void Tx::Rollback()
 {
     if(!write)
     {
-        pthread_rwlock_unlock(db->RWMutex);
+        pthread_rwlock_unlock(&db->RWMutex);
         return;
     }
 
@@ -36,14 +36,14 @@ void Tx::Rollback()
         db->dal->freelist->releasePage(p);
     }
     allocatedPageNums.clear();
-    pthread_rwlock_unlock(db->RWMutex);
+    pthread_rwlock_unlock(&db->RWMutex);
 }
 
 void Tx::Commit()
 {
     if(!write)
     {
-        pthread_rwlock_unlock(db->RWMutex);
+        pthread_rwlock_unlock(&db->RWMutex);
         return;
     }
 
@@ -61,7 +61,7 @@ void Tx::Commit()
     dirtyNodes.clear();
     pagesToDelete.clear();
     allocatedPageNums.clear();
-    pthread_rwlock_unlock(db->RWMutex);
+    pthread_rwlock_unlock(&db->RWMutex);
 }
 
 Collection* Tx::getRootCollection()
@@ -72,7 +72,7 @@ Collection* Tx::getRootCollection()
     return rootCollection;
 }
 
-Collection* Tx::getCollection(char* name)
+Collection* Tx::getCollection(const char* name)
 {
     Collection* rootCollection=getRootCollection();
     Item* item=rootCollection->Find(name);//这里返回的其实是Collection对象
@@ -95,7 +95,7 @@ Collection* Tx::createCollection(Collection* collection)
     return collection;
 }
 
-Collection* Tx::createCollection(char* name)
+Collection* Tx::createCollection(const char* name)
 {
     if(!write) return NULL;
 
